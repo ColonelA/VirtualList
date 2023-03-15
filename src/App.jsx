@@ -25,12 +25,12 @@ const bufferSize = 5;
 
 
 export default function InitComp() { 
-  return ( <VirtualList  
+  return ( <VirtualList   
+            data={data}
            height={userVisibleHeight}
            total={dataLength} 
            estimatedRowHeight={estimateRowHeight}
            bufferSize={bufferSize}  
-
            rowRenderer={(index: number, styleData: any) => {
             const item = index;
             return (

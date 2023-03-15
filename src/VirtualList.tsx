@@ -18,9 +18,21 @@ interface CachedPosition {
   height: number;
   dValue: number;
 }
+ 
+function throttle(fn, delay) {
+  let timer;
+  return function(){
+    if(!timer) {
+      fn.apply(this, arguments)
+      timer = setTimeout(()=>{
+        clearTimeout(timer)
+        timer = null
+      },delay)
+    }
+  }
+}
 
-
-
+ 
 function VirtualList(props: ViProps) {  
   const { 
      height, 
@@ -28,7 +40,8 @@ function VirtualList(props: ViProps) {
      estimatedRowHeight, 
      bufferSize = 5,  
      noDataContent, 
-     rowRenderer
+     rowRenderer, 
+     data
     } = props
   const [scrollTopValue,  updateScrollTopValue ] = useState<number>(0)
   
@@ -40,14 +53,15 @@ function VirtualList(props: ViProps) {
 
   const phantomContentRef = useRef<HTMLDivElement>(null);
   const actualContentRef = useRef<HTMLDivElement>(null);    
-  let phantomHeight  = estimatedRowHeight * total;  
+  const [phantomHeight, setPhantomHeight ]  =useState<number>(estimatedRowHeight * total) ;  
   const scrollingContainer = useRef<HTMLDivElement>(null);
   const [cachedPositions, setCachedPositions] = useState<CachedPosition[]>([]);
   
   useEffect (() => { 
       let cached = [];
-      for (let index = 0; index < total; index++) {
-        cached[index] = { 
+      for (let index = 0; index < total; index++) {         
+        cached[index] = {   
+          ...data[index],
           index: index,  
           height: estimatedRowHeight, 
           top: index * estimatedRowHeight,
@@ -87,9 +101,9 @@ function VirtualList(props: ViProps) {
     return idx;
    }
 
-
+   
     
-
+  const [changTime, setChangTime] = useState<number>();
   const onScroll = (event: any)  => {  
      const { target } = event;
 
@@ -99,13 +113,13 @@ function VirtualList(props: ViProps) {
     const { scrollTop } = target;  
     const currentStartIndex = getStartIndex(scrollTop); 
    
-    
     if (currentStartIndex !== originStartIdx) {  
         originStartIdx = currentStartIndex;
         setStartIndex(Math.max(currentStartIndex - bufferSize, 0));
         setEndIndex(Math.min(currentStartIndex +  limit + bufferSize,
           total - 1
-        ));
+        )); 
+        setChangTime(new Date().getTime())
         updateScrollTopValue(scrollTop)
     }
    }         
@@ -134,8 +148,80 @@ function VirtualList(props: ViProps) {
       : 0
   }px,0)`;  
 
+    
  
+  useEffect( ()  => { 
+    if (actualContentRef.current && total > 0 && (Array.isArray(cachedPositions) && cachedPositions.length  !== 0)) {  
+      const { current: { childNodes } } = actualContentRef
+      const nodes: NodeListOf<any> = childNodes;
+      const startNode = nodes[0];
+  
+      nodes.forEach((node: HTMLDivElement) => { 
+      const rect = node.getBoundingClientRect ? node.getBoundingClientRect() : false; 
+        if (!node) {
+          // scroll too fast?...
+          return;
+        }  
+    
+        if (rect) {
+          const { height } = rect; 
+          const index = Number(node.id.split("-")[1]);
+          const oldHeight = cachedPositions[index].height;
+          const dValue = oldHeight - height;  
+  
+          cachedPositions[index].bottom -= dValue;
+          cachedPositions[index].height = height;
+          cachedPositions[index].dValue = dValue;
+          let startIdx = 0;  
 
+          const { nextSibling } = startNode
+
+         if (startNode) {
+            startIdx = Number(nextSibling.id.split("-")[1]);
+         }
+  
+
+        const cachedPositionsLen = cachedPositions.length;
+        let cumulativeDiffHeight = cachedPositions[startIdx].dValue; 
+
+        cachedPositions[startIdx].dValue = 0;  
+
+        for (let i = startIdx + 1; i < cachedPositionsLen; ++i) {
+          const item = cachedPositions[i];
+      
+           cachedPositions[i].top = cachedPositions[i - 1].bottom;
+           cachedPositions[i].bottom =
+           cachedPositions[i].bottom - cumulativeDiffHeight;
+    
+          if (item.dValue !== 0) {
+            cumulativeDiffHeight += item.dValue;
+            item.dValue = 0;
+          }
+        }    
+
+          
+        console.log(cachedPositions, cachedPositions[cachedPositionsLen - 1].bottom );
+        
+
+        setCachedPositions(cachedPositions)
+        setPhantomHeight(cachedPositions[cachedPositionsLen - 1].bottom)
+
+   
+        }
+         
+  
+
+      
+      })
+
+    }
+
+
+  } , [changTime]) 
+
+ 
+ 
+  
   return (
     <div 
       ref={scrollingContainer}  
@@ -147,25 +233,21 @@ function VirtualList(props: ViProps) {
       }}  
       onScroll={onScroll}
     >    
-
-       <div
-          ref={phantomContentRef}
-          style={{ height: phantomHeight, position: "relative" }}
+      <div
+        ref={phantomContentRef}
+        style={{ height: phantomHeight, position: "relative" }}
       /> 
-
        <div 
          style={{ 
           width: '100%', 
           position: 'absolute', 
           top:0,  
           transform: getTransform()
-       }}  
+        }}  
         ref={actualContentRef}
       > {renderDisplayContent()}</div>
-
  
         {total === 0 && (noDataContent || <Empty />)}
-
     </div>
   );
 }
