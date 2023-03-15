@@ -1,6 +1,8 @@
 import React from 'react';
 import VirtualList from './VirtualList.tsx'
-import faker from "faker";
+import faker from "faker"; 
+import { css } from "@emotion/css";
+
   
 
 const data = [];
@@ -23,5 +25,49 @@ const bufferSize = 5;
 
 
 export default function InitComp() { 
-  return ( <VirtualList />)
+  return ( <VirtualList  
+           height={userVisibleHeight}
+           total={dataLength} 
+           estimatedRowHeight={estimateRowHeight}
+           bufferSize={bufferSize}  
+
+           rowRenderer={(index: number, styleData: any) => {
+            const item = index;
+            return (
+              <div
+                key={item}
+                className={css`
+                  width: 100%;
+                  padding: 20px;
+                  border-bottom: 1px solid #000;
+                `}
+                style={styleData}
+                onClick={() => {
+                  console.log("item-", index);
+                }}
+                id={`item-${index}`}
+              >
+                <span
+                  className={css`
+                    display: block;
+                    color: rgba(0, 0, 0, 0, 85);
+                    font-weight: 500;
+                    font-size: 14px;
+                  `}
+                >
+                  Item - {data[index].id} Data:
+                </span>
+                <span
+                  className={css`
+                    width: 100%;
+                    color: rgba(0, 0, 0, 0.5);
+                    font-size: 16px;
+                  `}
+                >
+                  {data[index].value}
+                </span>
+              </div>
+            );
+          }}
+      />)
 };
