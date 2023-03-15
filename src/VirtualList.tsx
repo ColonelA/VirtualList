@@ -41,7 +41,7 @@ function VirtualList(props: ViProps) {
      bufferSize = 5,  
      noDataContent, 
      rowRenderer, 
-     data
+ 
     } = props
   const [scrollTopValue,  updateScrollTopValue ] = useState<number>(0)
   
@@ -61,7 +61,6 @@ function VirtualList(props: ViProps) {
       let cached = [];
       for (let index = 0; index < total; index++) {         
         cached[index] = {   
-          ...data[index],
           index: index,  
           height: estimatedRowHeight, 
           top: index * estimatedRowHeight,
@@ -198,11 +197,7 @@ function VirtualList(props: ViProps) {
             item.dValue = 0;
           }
         }    
-
-          
-        console.log(cachedPositions, cachedPositions[cachedPositionsLen - 1].bottom );
-        
-
+ 
         setCachedPositions(cachedPositions)
         setPhantomHeight(cachedPositions[cachedPositionsLen - 1].bottom)
 
