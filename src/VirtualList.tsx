@@ -19,20 +19,7 @@ interface CachedPosition {
   dValue: number;
 }
  
-function throttle(fn, delay) {
-  let timer;
-  return function(){
-    if(!timer) {
-      fn.apply(this, arguments)
-      timer = setTimeout(()=>{
-        clearTimeout(timer)
-        timer = null
-      },delay)
-    }
-  }
-}
 
- 
 function VirtualList(props: ViProps) {  
   const { 
      height, 
@@ -41,15 +28,12 @@ function VirtualList(props: ViProps) {
      bufferSize = 5,  
      noDataContent, 
      rowRenderer, 
- 
     } = props
-  const [scrollTopValue,  updateScrollTopValue ] = useState<number>(0)
-  
 
   const limit = Math.ceil(height / estimatedRowHeight);
   const [startIndex, setStartIndex ] = useState<number>(0);
   let originStartIdx: number = 0;  
-  const [endIndex, setEndIndex ] = useState<number>(Math.min(originStartIdx + limit +  bufferSize, total - 1));
+  const [endIndex, setEndIndex] = useState<number>(Math.min(originStartIdx + limit +  bufferSize, total - 1));
 
   const phantomContentRef = useRef<HTMLDivElement>(null);
   const actualContentRef = useRef<HTMLDivElement>(null);    
@@ -77,7 +61,6 @@ function VirtualList(props: ViProps) {
      let idx = 0
       
      const calcFindValue = (currentValue: CachedPosition, targetValue: number) => { 
-  
       const currentCompareValue = currentValue.bottom;     
       if (currentCompareValue === targetValue) {
         return CompareResult.eq;
@@ -100,14 +83,10 @@ function VirtualList(props: ViProps) {
     return idx;
    }
 
-   
-    
   const [changTime, setChangTime] = useState<number>();
   const onScroll = (event: any)  => {  
-     const { target } = event;
-
-   if ( target === scrollingContainer.current) { 
- 
+    const { target } = event;
+   if (target === scrollingContainer.current) { 
     // 当前元素滚动距离
     const { scrollTop } = target;  
     const currentStartIndex = getStartIndex(scrollTop); 
@@ -119,7 +98,6 @@ function VirtualList(props: ViProps) {
           total - 1
         )); 
         setChangTime(new Date().getTime())
-        updateScrollTopValue(scrollTop)
     }
    }         
   } 
@@ -141,11 +119,11 @@ function VirtualList(props: ViProps) {
 
   
   const getTransform = () =>
-  `translate3d(0,${
-     startIndex >= 1
-      ? cachedPositions[startIndex - 1].bottom
-      : 0
-  }px,0)`;  
+    `translate3d(0,${
+      startIndex >= 1
+        ? cachedPositions[startIndex - 1].bottom
+        : 0
+    }px,0)`;  
 
     
  
@@ -158,7 +136,6 @@ function VirtualList(props: ViProps) {
       nodes.forEach((node: HTMLDivElement) => { 
       const rect = node.getBoundingClientRect ? node.getBoundingClientRect() : false; 
         if (!node) {
-          // scroll too fast?...
           return;
         }  
     
@@ -178,11 +155,9 @@ function VirtualList(props: ViProps) {
          if (startNode) {
             startIdx = Number(nextSibling.id.split("-")[1]);
          }
-  
 
         const cachedPositionsLen = cachedPositions.length;
         let cumulativeDiffHeight = cachedPositions[startIdx].dValue; 
-
         cachedPositions[startIdx].dValue = 0;  
 
         for (let i = startIdx + 1; i < cachedPositionsLen; ++i) {
@@ -196,22 +171,12 @@ function VirtualList(props: ViProps) {
             cumulativeDiffHeight += item.dValue;
             item.dValue = 0;
           }
-        }    
- 
-        setCachedPositions(cachedPositions)
-        setPhantomHeight(cachedPositions[cachedPositionsLen - 1].bottom)
-
-   
+        }     
+          setCachedPositions(cachedPositions)
+          setPhantomHeight(cachedPositions[cachedPositionsLen - 1].bottom)
         }
-         
-  
-
-      
       })
-
     }
-
-
   } , [changTime]) 
 
  
